@@ -82,6 +82,7 @@
             <h2><i class="fa-solid fa-comments"></i> 실시간 회의 로그</h2>
             <div class="log-actions">
               <button class="icon-btn sm" id="btn-excerpt-mode" title="발췌 회의"><i class="fa-solid fa-scissors"></i></button>
+              <button class="icon-btn sm" id="btn-all-summary" title="모든 회의 종합"><i class="fa-solid fa-layer-group"></i></button>
               <button class="icon-btn sm" id="btn-download-log" title="회의 로그 다운로드"><i class="fa-solid fa-download"></i></button>
               <button class="icon-btn sm" id="btn-expand-log" title="확장"><i class="fa-solid fa-expand"></i></button>
             </div>
@@ -161,7 +162,7 @@
 
     <!-- 아젠다 추천 모달 (중앙) -->
     <div id="agenda-modal" class="modal-overlay hidden">
-      <div class="modal soft-panel" style="max-width:680px; max-height:80vh; display:flex; flex-direction:column;">
+      <div class="modal soft-panel" style="max-width:884px; max-height:85vh; display:flex; flex-direction:column;">
         <div class="modal-header panel-header">
           <h2 style="display:flex;align-items:center;gap:8px;">
             <i class="fa-solid fa-lightbulb" style="color:#fbbf24;"></i>
@@ -219,6 +220,18 @@
           <button class="action-btn primary" id="btn-agenda-confirm-ok">
             <i class="fa-solid fa-bolt"></i> 새 탭에서 회의 시작
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 전체 회의 종합 모달 -->
+    <div id="all-summary-modal" class="modal-overlay hidden">
+      <div class="modal soft-panel" style="max-width:720px;max-height:85vh;display:flex;flex-direction:column;">
+        <div class="modal-header panel-header">
+          <h2><i class="fa-solid fa-layer-group" style="color:#60a5fa;"></i> 전체 회의 종합</h2>
+          <button class="icon-btn sm" id="btn-all-summary-close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="result-modal-body" id="all-summary-content" style="padding:24px;overflow-y:auto;flex:1;font-size:14px;line-height:1.8;color:var(--text-secondary);">
         </div>
       </div>
     </div>

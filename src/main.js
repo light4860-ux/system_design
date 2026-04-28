@@ -505,6 +505,18 @@ async function startMeeting() {
   isMeeting = false;
 }
 
+function resetMeetingUI() {
+  const btnStart = document.getElementById('btn-start');
+  if (btnStart) { btnStart.innerHTML = '<i class="fa-solid fa-bolt"></i> 회의 시작'; btnStart.disabled = false; }
+  document.getElementById('summary-content').innerHTML = `<div class="empty-state"><i class="fa-solid fa-hourglass-empty"></i><p>회의가 진행되면 요약이 생성됩니다.</p></div>`;
+  document.getElementById('btn-show-result').style.display = 'none';
+  const btnAR = document.getElementById('btn-agenda-recommend');
+  if (btnAR) { btnAR.style.display = 'none'; btnAR.disabled = true; }
+  document.querySelectorAll('.step').forEach(el => el.classList.remove('active','done'));
+  resultCache = '';
+  isMeeting = false;
+}
+
 async function runMasterSummary(agentResponses, fullAgenda) {
   const chatMsgs = getActiveContainer()?.querySelectorAll('.chat-msg:not(.msg-master)') || [];
   let agentLogs = '';
@@ -1226,7 +1238,6 @@ document.getElementById('btn-excerpt-cancel')?.addEventListener('click', cancelE
 // 이벤트 위임으로 탭별 발췌 버튼 처리
 document.getElementById('tab-contents')?.addEventListener('click', (e) => {
   if (e.target.closest('.btn-excerpt-confirm')) {
-    // 현재 활성 탭의 체크된 항목 처리
     const checked = document.querySelectorAll('.excerpt-checkbox:checked');
     if (!checked.length) { alert('선택한 문단이 없습니다.'); return; }
     let excerptText = '';
@@ -1239,6 +1250,7 @@ document.getElementById('tab-contents')?.addEventListener('click', (e) => {
     const activeContent = document.querySelector('.tab-content.active');
     const confirmBar = activeContent?.querySelector('.excerpt-confirm-bar');
     if (confirmBar) confirmBar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 아젠다 생성 중...';
+
     callGemini(
       `선택된 내용으로 구체화 아젠다를 JSON으로 반환:
 {"title":"제목(25자이내)","unresolved":["항목1","항목2"],"context":"방향(50자이내)"}`,
@@ -1247,13 +1259,42 @@ document.getElementById('tab-contents')?.addEventListener('click', (e) => {
       try {
         const parsed = JSON.parse(result.replace(/```json/g,'').replace(/```/g,'').trim());
         const newAgenda = `[${parsed.title}]\n\n미확정 사항:\n${parsed.unresolved.map(u=>`- ${u}`).join('\n')}\n\n방향: ${parsed.context}`;
-        document.getElementById('agenda-input').value = newAgenda;
-        saveAgendaToStorage();
+
+        // 체크박스 및 confirmBar 원상복구
         document.querySelectorAll('.excerpt-checkbox').forEach(cb => cb.remove());
         document.getElementById('btn-excerpt-mode').style.display = 'flex';
-        if (confirmBar) { confirmBar.style.display = 'none'; confirmBar.innerHTML = `<span style="font-size:12px;color:var(--text-secondary);margin-right:auto;">선택한 문단으로 아젠다를 생성합니다</span><button class="action-btn outline btn-excerpt-cancel" style="font-size:12px;padding:6px 12px;">취소</button><button class="action-btn primary btn-excerpt-confirm" style="font-size:12px;padding:6px 12px;"><i class="fa-solid fa-bolt"></i> 아젠다 생성</button>`; }
-      } catch(err) { if (confirmBar) confirmBar.innerHTML = `<span style="color:#f87171">파싱 오류</span>`; }
-    }).catch(err => { if (confirmBar) confirmBar.innerHTML = `<span style="color:#f87171">오류: ${err.message}</span>`; });
+        if (confirmBar) {
+          confirmBar.style.display = 'none';
+          confirmBar.innerHTML = `<span style="font-size:12px;color:var(--text-secondary);margin-right:auto;">선택한 문단으로 아젠다를 생성합니다</span><button class="action-btn outline btn-excerpt-cancel" style="font-size:12px;padding:6px 12px;">취소</button><button class="action-btn primary btn-excerpt-confirm" style="font-size:12px;padding:6px 12px;"><i class="fa-solid fa-bolt"></i> 아젠다 생성</button>`;
+        }
+
+        // 확인 팝업 표시
+        const confirmModal = document.getElementById('agenda-confirm-modal');
+        const previewEl = document.getElementById('agenda-confirm-preview');
+        if (confirmModal && previewEl) {
+          previewEl.textContent = newAgenda;
+          confirmModal.classList.remove('hidden');
+          document.getElementById('btn-agenda-confirm-ok').onclick = () => {
+            confirmModal.classList.add('hidden');
+            const newTabId = addNewTab(newAgenda);
+            if (newTabId === false) return;
+            document.getElementById('agenda-input').value = newAgenda;
+            saveAgendaToStorage();
+            const contextAdd = `\n\n[이번 회의 컨텍스트]\n발췌 아젠다: ${parsed.title}\n집중 논의: ${parsed.context}`;
+            document.querySelectorAll('.agent-guide').forEach(t => { t.value = t.value + contextAdd; });
+            saveGuidesToStorage();
+            resetMeetingUI();
+          };
+          document.getElementById('btn-agenda-confirm-cancel').onclick = () => {
+            confirmModal.classList.add('hidden');
+          };
+        }
+      } catch(err) {
+        if (confirmBar) confirmBar.innerHTML = `<span style="color:#f87171">파싱 오류: ${err.message}</span>`;
+      }
+    }).catch(err => {
+      if (confirmBar) confirmBar.innerHTML = `<span style="color:#f87171">오류: ${err.message}</span>`;
+    });
   }
   if (e.target.closest('.btn-excerpt-cancel')) {
     document.querySelectorAll('.excerpt-checkbox').forEach(cb => cb.remove());
@@ -1274,3 +1315,75 @@ document.getElementById('agenda-input')?.addEventListener('input', saveAgendaToS
 
 // 탭 0 클릭 이벤트
 document.querySelector('[data-tab="0"]')?.addEventListener('click', () => switchTab(0));
+
+// ── 모든 회의 종합 ──
+document.getElementById('btn-all-summary')?.addEventListener('click', async () => {
+  const btn = document.getElementById('btn-all-summary');
+  const modal = document.getElementById('all-summary-modal');
+  const content = document.getElementById('all-summary-content');
+  if (!modal || !content) return;
+
+  modal.classList.remove('hidden');
+  content.innerHTML = '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>전체 회의 종합 중...</p></div>';
+
+  // 모든 탭 내용 수집
+  let allLogs = '';
+  document.querySelectorAll('.tab-content').forEach((tab, idx) => {
+    const msgs = tab.querySelectorAll('.chat-msg');
+    if (!msgs.length) return;
+    allLogs += `\n\n${'═'.repeat(40)}\n회의 ${idx + 1}차\n${'═'.repeat(40)}\n`;
+    msgs.forEach(msg => {
+      const name = msg.querySelector('.chat-name')?.textContent || '';
+      const text = msg.querySelector('.chat-text')?.innerText || '';
+      if (text && !text.includes('분석 중')) allLogs += `[${name}]: ${text}\n\n`;
+    });
+  });
+
+  if (!allLogs.trim()) {
+    content.innerHTML = '<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>종합할 회의 내용이 없습니다.</p></div>';
+    return;
+  }
+
+  try {
+    const result = await callGemini(
+      `당신은 DNF 수석 기획 디렉터입니다.
+여러 회차에 걸친 기획 회의 전체를 종합하여 최종 요약을 작성하세요.
+
+[출력 형식 - 마크다운, JSON 절대 금지]
+# 📋 전체 회의 종합 요약
+
+## 1. 회의 개요
+(몇 차 회의, 주요 주제 흐름)
+
+## 2. 회차별 핵심 결정사항
+(회차별 1~3줄로 압축)
+
+## 3. 전체 확정 방향
+(모든 회의를 통해 확정된 최종 방향)
+
+## 4. 최종 기획서 핵심 포인트
+(전체 회의 통합 기준, 5~8개)
+
+## 5. 최종 미결 사항
+(아직 미결인 항목만, 3개 이내)
+
+[규칙]
+- 2000자 이내, 마크다운만, 에이전트 원문 복사 금지`,
+      `전체 회의 내용:\n${allLogs}`
+    );
+    content.innerHTML = result.replace(/\n/g, '<br>').replace(/#{1,3} /g, m => `<strong>${m}</strong>`);
+  } catch(err) {
+    content.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>오류: ${err.message}</p></div>`;
+  }
+});
+
+document.getElementById('btn-all-summary-close')?.addEventListener('click', () => {
+  document.getElementById('all-summary-modal')?.classList.add('hidden');
+});
+
+// ── 창 닫을 때 localStorage 자동 삭제 ──
+window.addEventListener('beforeunload', () => {
+  localStorage.removeItem('dnf_chat_log_0');
+  localStorage.removeItem('dnf_agenda_draft');
+  agents.forEach(a => localStorage.removeItem(`dnf_guide_${a.id}`));
+});
