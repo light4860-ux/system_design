@@ -534,7 +534,6 @@ if (btnSaveModal) {
     closeModal();
   });
 }
-}
 // ── 회의 로그 다운로드 ──
 function downloadChatLog() {
   const msgs = document.querySelectorAll('.chat-msg');
