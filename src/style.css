@@ -346,6 +346,49 @@ html, body {
   display: block;
 }
 
+/* Meeting Tabs */
+.meeting-tabs {
+  display: flex;
+  background: var(--bg-input);
+  padding: 4px;
+  gap: 4px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.meeting-tab {
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.meeting-tab.active {
+  background: var(--bg-surface);
+  color: var(--accent-primary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.tab-contents, .tab-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.tab-content:not(.active) {
+  display: none;
+}
+
 /* Summary Panel */
 .summary-content {
   padding: 24px;
@@ -412,8 +455,18 @@ html, body {
 
 /* Modal Styling */
 .modal-overlay {
+  position: fixed;
+  inset: 0;
   background: rgba(11, 10, 21, 0.85);
   backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.hidden {
+  display: none !important;
 }
 
 .modal {
@@ -421,4 +474,48 @@ html, body {
   border: 1px solid var(--border-highlight);
   border-radius: var(--radius-lg);
   box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+  width: 100%;
+  max-width: 500px;
+}
+
+.result-modal-overlay.hidden {
+  display: none !important;
+}
+
+/* Mode Selector in Settings */
+.mode-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.mode-option input {
+  display: none;
+}
+
+.mode-card {
+  padding: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.mode-option input:checked + .mode-card {
+  border-color: var(--accent-primary);
+  background: var(--bg-hover);
+  box-shadow: var(--shadow-glow);
+}
+
+.mode-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.mode-desc {
+  font-size: 11px;
+  color: var(--text-muted);
 }
