@@ -215,19 +215,19 @@ async function startMeeting() {
 - A/B안 구조 비교 및 기존 DNF 시스템 충돌 여부
 - 신규 시스템 필요 여부 및 구현 공수 판단
 
-[출력 형식]
-[결론] 이 구조로 가야 하는 이유 1줄
-[핵심 근거] 최대 3개, 각 1줄
-[조건/예외] 놓치면 안 되는 것만, 최대 2개
-[리스크] 최대 2개, 각 1줄
-[미확정] 다음 논의 필요한 것, 최대 2개
+[출력 형식 — 각 항목 반드시 1줄 이내]
+[결론] 1줄
+[핵심 근거] 최대 3개 (각 1줄, 불릿)
+[조건/예외] 최대 2개 (각 1줄, 불릿)
+[리스크] 최대 2개 (각 1줄, 불릿)
+[미확정] 최대 2개 (각 1줄, 불릿)
 
 [출력 규칙]
-- 분량을 줄이되 분석 레이어는 모두 포함
+- 전체 400자 이내 엄수. 초과 시 미확정 항목부터 축소
+- 각 항목은 반드시 1줄. 줄바꿈 후 이어서 쓰는 것 금지
+- 완전한 문장 대신 "핵심어 + 이유" 형태로 압축
+- "고려해야 합니다" 등 모호한 표현 금지
 - 결론 없이 나열만 하는 것 금지
-- "고려해야 합니다" 등 모호한 표현 금지 → 구체적 조건으로 대체
-- 중요한 예외 처리 생략 금지
-- 제시된 아이디어 범위 밖 내용 언급 금지
 - 근거 없는 동의 금지`,
 
   // CONTENT
@@ -241,24 +241,20 @@ async function startMeeting() {
 - PU(과금유저) 자산 보호 관점 리스크
 - 강제 변경 vs 선택권 부여 방향 판단
 - 기존 검증된 UI 패턴 재활용 우선
-- 실패 사례 반면교사 (일방적 UI 변경 후 롤백 등)
 
-[출력 형식]
-[결론] 유저 경험 관점 핵심 판단 1줄
-[세그먼트 영향] 헤비/캐주얼/복귀 각 1줄
-[리스크] PU 반발 가능성 포함, 최대 2개
-[SYSTEM 검토] 수용/반박 중 하나 선택 필수
-              반박 시 반드시 대안 제시
-              수용 시 보완점 1개 필수 명시
-[미확정] 최대 2개
+[출력 형식 — 각 항목 반드시 1줄 이내]
+[결론] 1줄
+[세그먼트 영향] 헤비/캐주얼/복귀 각 1줄 (불릿)
+[리스크] 최대 2개 (각 1줄, 불릿)
+[SYSTEM 검토] 수용 또는 반박 1줄 (반박 시 대안 포함)
+[미확정] 최대 2개 (각 1줄, 불릿)
 
 [출력 규칙]
-- 분량을 줄이되 분석 레이어는 모두 포함
-- 결론 없이 나열만 하는 것 금지
-- "고려해야 합니다" 등 모호한 표현 금지 → 구체적 조건으로 대체
-- 유료 아이템과 혼동될 수 있는 보상/UI 변경 반드시 검토
-- 업데이트 볼륨 대비 임팩트 판단 필수
-- 제시된 아이디어 범위 밖 내용 언급 금지
+- 전체 400자 이내 엄수. 초과 시 미확정 항목부터 축소
+- 각 항목은 반드시 1줄. 줄바꿈 후 이어서 쓰는 것 금지
+- 완전한 문장 대신 "핵심어 + 이유" 형태로 압축
+- "고려해야 합니다" 등 모호한 표현 금지
+- SYSTEM 검토는 반드시 수용/반박 중 하나 명시
 - 근거 없는 동의 금지`,
 
   // OPS
@@ -272,28 +268,22 @@ async function startMeeting() {
 - CS 이슈 유형 및 대응 방향 선제 도출
 - 기존 DNF UI 패턴 준수 여부 검토
 - 일방적 변경 금지 원칙 — 선택지 제공 구조 권고
-- 유저 학습 비용 높은 변경 시 온보딩/툴팁 보완 방안 제시
 
-[출력 형식]
-[결론] 운영 관점 핵심 판단 1줄
-[커뮤니티 반응] 긍정/부정 각 1줄 (근거 포함)
-[CS 이슈] 예측 유형 및 대응 방향, 최대 2개
-[UI 정합성] 기존 패턴 충돌 여부 1줄
-[SYSTEM 검토] 수용/반박 중 하나 선택 필수
-              반박 시 반드시 대안 제시
-              수용 시 보완점 1개 필수 명시
-[CONTENT 검토] 수용/반박 중 하나 선택 필수
-               반박 시 반드시 대안 제시
-               수용 시 보완점 1개 필수 명시
-[미확정] 최대 2개
+[출력 형식 — 각 항목 반드시 1줄 이내]
+[결론] 1줄
+[커뮤니티] 긍정 1줄 / 부정 1줄 (불릿)
+[CS 이슈] 최대 2개 (각 1줄, 불릿)
+[UI 정합성] 1줄
+[SYSTEM 검토] 수용 또는 반박 1줄 (반박 시 대안 포함)
+[CONTENT 검토] 수용 또는 반박 1줄 (반박 시 대안 포함)
+[미확정] 최대 2개 (각 1줄, 불릿)
 
 [출력 규칙]
-- 분량을 줄이되 분석 레이어는 모두 포함
-- 결론 없이 나열만 하는 것 금지
-- "고려해야 합니다" 등 모호한 표현 금지 → 구체적 조건으로 대체
-- 커뮤니티 반응 긍정/부정 반드시 분리
+- 전체 500자 이내 엄수. 초과 시 미확정 항목부터 축소
+- 각 항목은 반드시 1줄. 줄바꿈 후 이어서 쓰는 것 금지
+- 완전한 문장 대신 "핵심어 + 이유" 형태로 압축
+- SYSTEM/CONTENT 검토는 반드시 수용/반박 중 하나 명시
 - "유저들이 좋아할 것 같다" 근거 없는 낙관 금지
-- 제시된 아이디어 범위 밖 내용 언급 금지
 - 근거 없는 동의 금지`
 ];
 
@@ -371,9 +361,6 @@ async function startMeeting() {
   document.getElementById('btn-show-result').style.display = 'flex';
   resultCache = '';
   isMeeting = false;
-
-  // 회의 완료 후 아젠다 추천 자동 실행
-  await generateAgendaRecommendations(agentResponses, fullAgenda);
 }
 
 document.getElementById('btn-start')?.addEventListener('click', startMeeting);
@@ -453,6 +440,10 @@ document.getElementById('btn-reset')?.addEventListener('click', () => {
   document.getElementById('btn-summary').classList.add('disabled');
   document.getElementById('btn-show-result').style.display = 'none';
   resultCache = '';
+  const btnAR = document.getElementById('btn-agenda-recommend');
+  if (btnAR) { btnAR.style.display = 'none'; btnAR.disabled = true; }
+  window._lastAgentResponses = null;
+  window._lastFullAgenda = null;
   
   document.querySelectorAll('.step').forEach(el => {
     el.classList.remove('active');
@@ -481,45 +472,41 @@ document.getElementById('btn-summary')?.addEventListener('click', async () => {
 앞선 에이전트들의 회의를 종합하여 기획 회의록을 작성하세요.
 
 [검수 역할]
-앞 에이전트 출력에서 아래 항목을 지적하고 보완할 것
-- 결론이 빠진 것
-- 근거 없이 주장만 한 것
-- 중요한 예외 처리가 누락된 것
-- 반론 없이 형식적으로 수용만 한 것
+- 결론 빠진 것, 근거 없는 주장, 형식적 수용 지적
 
 [출력 형식]
 
 # 📋 DNF 기획 회의록
-**회의 주제:** (한 줄 요약)
+**회의 주제:** (1줄)
 **참석:** 수석 시스템 기획자 · 콘텐츠 기획자 · 운영 담당자 · 수석 디렉터
 
 ---
 
-## 1. 회의 배경 및 목적
+## 1. 회의 배경 (3줄 이내)
 
-## 2. 주요 논의 흐름
+## 2. 주요 논의
 
-### 아젠다 A: (논점)
-- **제기:**
-- **반론/보완:**
-- **결론:**
+### (논점명)
+- **제기:** 1줄
+- **반론:** 1줄
+- **결론:** 1줄
 
-(아젠다 수만큼 반복)
+(아젠다 수만큼 반복, 각 3줄 이내)
 
-## 3. 최종 확정 방향
+## 3. 확정 방향 (3줄 이내)
 
 ## 4. 기획서 핵심 포인트
-(5~8개)
+(5개 이내, 각 1줄)
 
 ## 5. 미결 사항
-(기획 관점만, 개발/QA 항목 제외)
+(3개 이내, 각 1줄)
 
 [출력 규칙]
+- 반드시 1200자 이내. 초과 시 섹션 4, 5 순으로 축소
 - 마크다운 형식으로만 출력 (JSON 절대 금지)
-- 논의 흐름이 보이도록 작성 (결론만 나열 금지)
-- 에이전트 원문 복사 금지, 핵심만 재구성
-- 각 쟁점마다 제기 → 반론 → 결론 흐름 포함
-- 1500자 내외`;
+- 에이전트 원문 절대 복사 금지, 핵심만 재구성
+- 각 항목 1줄 엄수. 길게 서술 금지
+- 논의 흐름(제기→반론→결론) 반드시 포함`;
 
   try {
     const agendaInput = document.getElementById('agenda-input').value;
@@ -545,6 +532,18 @@ document.getElementById('btn-summary')?.addEventListener('click', async () => {
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
     btn.innerHTML = '<i class="fa-solid fa-crown"></i> 디렉터 최종 판단 완료';
+
+    // 디렉터 완료 후 추천 아젠다 버튼 활성화
+    const btnAgendaRecommend = document.getElementById('btn-agenda-recommend');
+    if (btnAgendaRecommend) {
+      btnAgendaRecommend.style.display = 'flex';
+      btnAgendaRecommend.disabled = false;
+      // 에이전트 응답 저장 (버튼 클릭 시 사용)
+      window._lastAgentResponses = Array.from(
+        document.querySelectorAll('.chat-msg:not(.msg-master)')
+      ).map(msg => msg.querySelector('.chat-text')?.innerText || '');
+      window._lastFullAgenda = document.getElementById('agenda-input').value;
+    }
   } catch(err) {
     addChatMessage('master',
       `<span style="color:#f87171;">오류: ${err.message}</span>`
@@ -765,16 +764,16 @@ let usedSignalIndices = [];   // 이미 사용된 신호 인덱스
 let recommendRound = 0;       // 현재 추천 라운드
 
 async function generateAgendaRecommendations(agentResponses, agenda) {
-  // 추천 패널 초기화
   allExtractedSignals = [];
   usedSignalIndices = [];
   recommendRound = 0;
 
-  const panel = document.getElementById('agenda-recommend-panel');
-  if (!panel) return;
-  panel.style.display = 'block';
-  panel.querySelector('.agenda-recommend-list').innerHTML =
-    '<div class="agenda-loading"><i class="fa-solid fa-spinner fa-spin"></i> 다음 아젠다 분석 중...</div>';
+  // 모달 열기 및 로딩 표시
+  const modal = document.getElementById('agenda-modal');
+  const list = document.getElementById('agenda-recommend-list');
+  if (!modal || !list) return;
+  modal.classList.remove('hidden');
+  list.innerHTML = '<div class="agenda-loading"><i class="fa-solid fa-spinner fa-spin"></i> 다음 아젠다 분석 중...</div>';
 
   const combinedLog = agentResponses.join('\n\n---\n\n');
 
@@ -800,15 +799,12 @@ async function generateAgendaRecommendations(agentResponses, agenda) {
       `회의 안건: ${agenda}\n\n회의 내용:\n${combinedLog}`
     );
 
-    // JSON 파싱
     const cleaned = raw.replace(/```json/g,'').replace(/```/g,'').trim();
     const signals = JSON.parse(cleaned);
     allExtractedSignals = Array.isArray(signals) ? signals : [];
-
     renderAgendaRecommendations();
   } catch(e) {
-    panel.querySelector('.agenda-recommend-list').innerHTML =
-      '<div class="agenda-empty">신호를 추출하지 못했습니다.</div>';
+    list.innerHTML = '<div class="agenda-empty">신호를 추출하지 못했습니다.</div>';
   }
 }
 
@@ -909,13 +905,12 @@ function showContextUpdatePreview(signal) {
       textarea.value = textarea.value + contextAdd;
     });
     preview.classList.add('hidden');
-    // 패널 닫기
-    document.getElementById('agenda-recommend-panel').style.display = 'none';
+    document.getElementById('agenda-modal')?.classList.add('hidden');
   };
 
   document.getElementById('btn-context-cancel').onclick = () => {
     preview.classList.add('hidden');
-    document.getElementById('agenda-recommend-panel').style.display = 'none';
+    document.getElementById('agenda-modal')?.classList.add('hidden');
   };
 }
 
@@ -924,9 +919,16 @@ document.getElementById('btn-agenda-reroll')?.addEventListener('click', () => {
   renderAgendaRecommendations();
 });
 
-// 패널 닫기
-document.getElementById('btn-agenda-close')?.addEventListener('click', () => {
-  document.getElementById('agenda-recommend-panel').style.display = 'none';
+// 아젠다 모달 닫기
+document.getElementById('btn-agenda-modal-close')?.addEventListener('click', () => {
+  document.getElementById('agenda-modal')?.classList.add('hidden');
+});
+
+// 추천 아젠다 버튼 (디렉터 완료 후 활성화)
+document.getElementById('btn-agenda-recommend')?.addEventListener('click', () => {
+  if (window._lastAgentResponses && window._lastFullAgenda) {
+    generateAgendaRecommendations(window._lastAgentResponses, window._lastFullAgenda);
+  }
 });
 
 // ══════════════════════════════════════════════

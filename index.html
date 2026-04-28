@@ -122,6 +122,9 @@
           <button class="action-btn result-btn" id="btn-show-result" style="display:none;">
             <i class="fa-solid fa-scroll"></i> 회의 결과 보기
           </button>
+          <button class="action-btn result-btn" id="btn-agenda-recommend" style="display:none;" disabled>
+            <i class="fa-solid fa-lightbulb"></i> 추천 아젠다
+          </button>
         </div>
       </aside>
 
@@ -145,22 +148,28 @@
 
     </main>
 
-    <!-- 아젠다 추천 패널 -->
-    <div id="agenda-recommend-panel" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:800; background:var(--bg-surface); border-top:1px solid var(--border-highlight); padding:16px 24px; max-height:50vh; overflow-y:auto;">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-        <h3 style="font-size:13px; color:var(--text-main); display:flex; align-items:center; gap:8px;">
-          <i class="fa-solid fa-lightbulb" style="color:#fbbf24;"></i>
-          다음 회의 아젠다 추천
-          <span style="font-size:10px; color:var(--text-muted); font-weight:400;">신호 기반 추출</span>
-        </h3>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <button id="btn-agenda-reroll" class="action-btn outline" style="font-size:11px; padding:5px 10px; gap:5px;">
-            <i class="fa-solid fa-dice"></i> 리롤
-          </button>
-          <button id="btn-agenda-close" class="icon-btn sm"><i class="fa-solid fa-xmark"></i></button>
+    <!-- 아젠다 추천 모달 (중앙) -->
+    <div id="agenda-modal" class="modal-overlay hidden">
+      <div class="modal soft-panel" style="max-width:680px; max-height:80vh; display:flex; flex-direction:column;">
+        <div class="modal-header panel-header">
+          <h2 style="display:flex;align-items:center;gap:8px;">
+            <i class="fa-solid fa-lightbulb" style="color:#fbbf24;"></i>
+            다음 회의 아젠다 추천
+            <span style="font-size:10px;color:var(--text-muted);font-weight:400;">신호 기반 추출</span>
+          </h2>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button id="btn-agenda-reroll" class="action-btn outline" style="font-size:11px;padding:5px 10px;">
+              <i class="fa-solid fa-dice"></i> 리롤
+            </button>
+            <button class="icon-btn sm" id="btn-agenda-modal-close">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+        <div style="padding:16px;overflow-y:auto;flex:1;">
+          <div id="agenda-recommend-list" class="agenda-recommend-list"></div>
         </div>
       </div>
-      <div id="agenda-recommend-list" class="agenda-recommend-list"></div>
     </div>
 
     <!-- 지침 컨텍스트 추가 미리보기 모달 -->
