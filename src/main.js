@@ -110,6 +110,48 @@ function loadGuidesFromStorage() {
   });
 }
 
+function saveChatToStorage() {
+  if (activeTab !== 0) return;
+  const container = document.getElementById('chat-container-0');
+  if (!container) return;
+  const data = Array.from(container.querySelectorAll('.chat-msg')).map(msg => ({
+    agentId: [...msg.classList].find(c => c.startsWith('msg-'))?.replace('msg-','') || '',
+    name: msg.querySelector('.chat-name')?.textContent || '',
+    time: msg.querySelector('.chat-time')?.textContent || '',
+    icon: msg.querySelector('.chat-avatar')?.innerHTML || '',
+    text: msg.querySelector('.chat-text')?.innerHTML || ''
+  }));
+  try { localStorage.setItem('dnf_chat_log_0', JSON.stringify(data)); } catch(e) {}
+}
+
+function loadChatFromStorage() {
+  try {
+    const raw = localStorage.getItem('dnf_chat_log_0');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (!data?.length) return;
+    const container = document.getElementById('chat-container-0');
+    if (!container) return;
+    container.innerHTML = '';
+    data.forEach(m => {
+      const div = document.createElement('div');
+      div.className = `chat-msg msg-${m.agentId}`;
+      div.innerHTML = `<div class="chat-avatar">${m.icon}</div><div class="chat-content"><div class="chat-meta"><span class="chat-name">${m.name}</span><span class="chat-time">${m.time}</span></div><div class="chat-text">${m.text}</div></div>`;
+      container.appendChild(div);
+    });
+    const hasMaster = data.some(m => m.agentId === 'master');
+    if (hasMaster) {
+      document.getElementById('btn-show-result').style.display = 'flex';
+      const btnAR = document.getElementById('btn-agenda-recommend');
+      if (btnAR) { btnAR.style.display = 'flex'; btnAR.disabled = false; }
+      window._lastAgentResponses = data.filter(m => m.agentId !== 'master').map(m => {
+        const t = document.createElement('div'); t.innerHTML = m.text; return t.innerText;
+      });
+      window._lastFullAgenda = document.getElementById('agenda-input')?.value || '';
+    }
+  } catch(e) {}
+}
+
 function initAgents() {
   const container = document.getElementById('agents-container');
   container.innerHTML = agents.map(a => `
@@ -172,6 +214,7 @@ function addChatMessage(agentId, message) {
   `;
   container.insertAdjacentHTML('beforeend', msgHTML);
   container.scrollTop = container.scrollHeight;
+  if (activeTab === 0) saveChatToStorage();
 }
 
 function addSummary(agent, text) {
@@ -453,12 +496,74 @@ async function startMeeting() {
     }
   }
 
-  btnStart.innerHTML = '<i class="fa-solid fa-check"></i> 회의 완료';
-  document.getElementById('btn-summary').disabled = false;
-  document.getElementById('btn-summary').classList.remove('disabled');
+  if (btnStart) btnStart.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 디렉터 종합 중...';
+  await runMasterSummary(agentResponses, fullAgenda);
+
+  if (btnStart) btnStart.innerHTML = '<i class="fa-solid fa-check"></i> 회의 완료';
   document.getElementById('btn-show-result').style.display = 'flex';
   resultCache = '';
   isMeeting = false;
+}
+
+async function runMasterSummary(agentResponses, fullAgenda) {
+  const chatMsgs = getActiveContainer()?.querySelectorAll('.chat-msg:not(.msg-master)') || [];
+  let agentLogs = '';
+  chatMsgs.forEach(msg => {
+    const name = msg.querySelector('.chat-name')?.textContent || '';
+    const text = msg.querySelector('.chat-text')?.innerText || '';
+    if (text && !text.includes('분석 중') && !text.includes('오류')) {
+      agentLogs += `[${name}]:\n${text}\n\n${'─'.repeat(40)}\n\n`;
+    }
+  });
+  const masterGuide = `당신은 DNF 수석 기획 디렉터입니다.
+앞선 에이전트들의 회의를 종합하여 기획 회의록을 작성하세요.
+
+[검수 역할]
+- 결론 빠진 것, 근거 없는 주장, 형식적 수용 지적
+
+[출력 형식]
+# 📋 DNF 기획 회의록
+**회의 주제:** (1줄)
+**참석:** 수석 시스템 기획자 · 콘텐츠 기획자 · 운영 담당자 · 수석 디렉터
+---
+## 1. 회의 배경 (3줄 이내)
+## 2. 주요 논의
+### (논점명)
+- **제기:** 1줄
+- **반론:** 1줄
+- **결론:** 1줄
+## 3. 확정 방향 (3줄 이내)
+## 4. 기획서 핵심 포인트 (5개 이내, 각 1줄)
+## 5. 미결 사항 (3개 이내, 각 1줄)
+
+[출력 규칙]
+- 반드시 1200자 이내
+- 마크다운 형식으로만 출력 (JSON 절대 금지)
+- 에이전트 원문 절대 복사 금지
+- 각 항목 1줄 엄수
+- 논의 흐름(제기→반론→결론) 반드시 포함`;
+
+  try {
+    const masterResponse = await callGemini(
+      masterGuide,
+      `기획 안건: ${fullAgenda}\n\n${agentLogs}\n\n위 내용을 종합하여 최종 회의록을 작성해주세요.`,
+      0, true
+    );
+    addChatMessage('master', masterResponse.replace(/\n/g, '<br>'));
+    const chatContainer = getActiveContainer();
+    if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
+    const btnAR = document.getElementById('btn-agenda-recommend');
+    if (btnAR) {
+      btnAR.style.display = 'flex';
+      btnAR.disabled = false;
+      window._lastAgentResponses = Array.from(
+        getActiveContainer()?.querySelectorAll('.chat-msg:not(.msg-master)') || []
+      ).map(msg => msg.querySelector('.chat-text')?.innerText || '');
+      window._lastFullAgenda = document.getElementById('agenda-input').value;
+    }
+  } catch(err) {
+    addChatMessage('master', `<span style="color:#f87171;">디렉터 오류: ${err.message}</span>`);
+  }
 }
 
 document.getElementById('btn-start')?.addEventListener('click', startMeeting);
@@ -522,6 +627,7 @@ document.getElementById('btn-reset')?.addEventListener('click', () => {
   // 아젠다 초기화
   document.getElementById('agenda-input').value = '';
   localStorage.removeItem('dnf_agenda_draft');
+  localStorage.removeItem('dnf_chat_log_0');
   attachedFiles = [];
   renderAttachedFiles();
 
@@ -566,8 +672,8 @@ document.getElementById('btn-reset')?.addEventListener('click', () => {
   `;
   document.getElementById('btn-start').innerHTML = '<i class="fa-solid fa-bolt"></i> 회의 시작';
   document.getElementById('btn-start').disabled = false;
-  document.getElementById('btn-summary').disabled = true;
-  document.getElementById('btn-summary').classList.add('disabled');
+  
+  
   document.getElementById('btn-show-result').style.display = 'none';
   resultCache = '';
   const btnAR = document.getElementById('btn-agenda-recommend');
@@ -582,105 +688,7 @@ document.getElementById('btn-reset')?.addEventListener('click', () => {
   isMeeting = false;
 });
 
-document.getElementById('btn-summary')?.addEventListener('click', async () => {
-  const btn = document.getElementById('btn-summary');
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 종합 중...';
-  btn.disabled = true;
-
-  const chatMsgs = getActiveContainer()?.querySelectorAll('.chat-msg:not(.msg-master)') || [];
-  let agentLogs = '';
-  chatMsgs.forEach(msg => {
-    const name = msg.querySelector('.chat-name')?.textContent || '';
-    const text = msg.querySelector('.chat-text')?.innerText || '';
-    if (text && !text.includes('분석 중') && !text.includes('오류')) {
-      agentLogs += `[${name}]:\n${text}\n\n${'─'.repeat(40)}\n\n`;
-    }
-  });
-
-  const masterGuide = `당신은 DNF 수석 기획 디렉터입니다.
-앞선 에이전트들의 회의를 종합하여 기획 회의록을 작성하세요.
-
-[검수 역할]
-- 결론 빠진 것, 근거 없는 주장, 형식적 수용 지적
-
-[출력 형식]
-
-# 📋 DNF 기획 회의록
-**회의 주제:** (1줄)
-**참석:** 수석 시스템 기획자 · 콘텐츠 기획자 · 운영 담당자 · 수석 디렉터
-
----
-
-## 1. 회의 배경 (3줄 이내)
-
-## 2. 주요 논의
-
-### (논점명)
-- **제기:** 1줄
-- **반론:** 1줄
-- **결론:** 1줄
-
-(아젠다 수만큼 반복, 각 3줄 이내)
-
-## 3. 확정 방향 (3줄 이내)
-
-## 4. 기획서 핵심 포인트
-(5개 이내, 각 1줄)
-
-## 5. 미결 사항
-(3개 이내, 각 1줄)
-
-[출력 규칙]
-- 반드시 1200자 이내. 초과 시 섹션 4, 5 순으로 축소
-- 마크다운 형식으로만 출력 (JSON 절대 금지)
-- 에이전트 원문 절대 복사 금지, 핵심만 재구성
-- 각 항목 1줄 엄수. 길게 서술 금지
-- 논의 흐름(제기→반론→결론) 반드시 포함`;
-
-  try {
-    const agendaInput = document.getElementById('agenda-input').value;
-    let fullAgenda = agendaInput;
-    if (attachedFiles.length > 0) {
-      fullAgenda += '\n\n[첨부 자료 명단]\n';
-      attachedFiles.forEach(file => {
-        fullAgenda += `- ${file.name}\n`;
-      });
-    }
-
-    const masterResponse = await callGemini(
-      masterGuide,
-      `기획 안건: ${fullAgenda}\n\n${agentLogs}\n\n위 내용을 종합하여 최종 회의록을 작성해주세요.`,
-      0, true  // isMaster = true → 고급 모드 시 Pro 모델 사용
-    );
-
-    addChatMessage('master',
-      masterResponse.replace(/\n/g, '<br>')
-    );
-
-    const chatContainer = getActiveContainer();
-    if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
-
-    btn.innerHTML = '<i class="fa-solid fa-crown"></i> 디렉터 최종 판단 완료';
-
-    // 디렉터 완료 후 추천 아젠다 버튼 활성화
-    const btnAgendaRecommend = document.getElementById('btn-agenda-recommend');
-    if (btnAgendaRecommend) {
-      btnAgendaRecommend.style.display = 'flex';
-      btnAgendaRecommend.disabled = false;
-      // 에이전트 응답 저장 (버튼 클릭 시 사용)
-      window._lastAgentResponses = Array.from(
-        document.querySelectorAll('.chat-msg:not(.msg-master)')
-      ).map(msg => msg.querySelector('.chat-text')?.innerText || '');
-      window._lastFullAgenda = document.getElementById('agenda-input').value;
-    }
-  } catch(err) {
-    addChatMessage('master',
-      `<span style="color:#f87171;">오류: ${err.message}</span>`
-    );
-    btn.innerHTML = '<i class="fa-solid fa-crown"></i> 오류 발생';
-    btn.disabled = false;
-  }
-});
+// 디렉터 판단은 회의 완료 시 자동 실행 (runMasterSummary)
 
 // Sidebar Collapse Logic
 const btnCollapseSidebar = document.getElementById('btn-collapse-sidebar');
@@ -1047,8 +1055,8 @@ async function selectAgenda(signalIdx) {
     `;
     document.getElementById('btn-start').innerHTML = '<i class="fa-solid fa-bolt"></i> 회의 시작';
     document.getElementById('btn-start').disabled = false;
-    document.getElementById('btn-summary').disabled = true;
-    document.getElementById('btn-summary').classList.add('disabled');
+    
+    
     document.getElementById('btn-show-result').style.display = 'none';
     const btnAR = document.getElementById('btn-agenda-recommend');
     if (btnAR) { btnAR.style.display = 'none'; btnAR.disabled = true; }
@@ -1190,33 +1198,30 @@ function cancelExcerpt() {
   if (confirmBar) confirmBar.style.display = 'none';
 }
 
-document.getElementById('btn-excerpt-mode')?.addEventListener('click', enableExcerptMode);
+document.getElementById('btn-excerpt-mode')?.addEventListener('click', () => {
+  const container = getActiveContainer();
+  if (!container) return;
+  const msgs = container.querySelectorAll('.chat-msg');
+  if (!msgs.length) { alert('발췌할 회의 내용이 없습니다.'); return; }
+  msgs.forEach(msg => {
+    if (msg.querySelector('.excerpt-checkbox')) return;
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.className = 'excerpt-checkbox';
+    msg.style.position = 'relative';
+    msg.insertBefore(cb, msg.firstChild);
+  });
+  const activeContent = document.querySelector('.tab-content.active');
+  const confirmBar = activeContent?.querySelector('.excerpt-confirm-bar');
+  const btn = document.getElementById('btn-excerpt-mode');
+  if (btn) btn.style.display = 'none';
+  if (confirmBar) confirmBar.style.display = 'flex';
+});
 document.getElementById('btn-excerpt-confirm')?.addEventListener('click', confirmExcerpt);
 document.getElementById('btn-excerpt-cancel')?.addEventListener('click', cancelExcerpt);
 
 // ══════════════════════════════════════════════
 // 탭 기반 발췌 회의 및 초기화
 // ══════════════════════════════════════════════
-
-// 기존 발췌 함수 오버라이드
-enableExcerptMode = function() {
-  const container = getActiveContainer();
-  if (!container) return;
-  const msgs = container.querySelectorAll('.chat-msg');
-  msgs.forEach((msg) => {
-    if (msg.querySelector('.excerpt-checkbox')) return;
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'excerpt-checkbox';
-    msg.style.position = 'relative';
-    msg.insertBefore(checkbox, msg.firstChild);
-  });
-  const btn = document.getElementById('btn-excerpt-mode');
-  const activeContent = document.querySelector('.tab-content.active');
-  const confirmBar = activeContent?.querySelector('.excerpt-confirm-bar');
-  if (btn) btn.style.display = 'none';
-  if (confirmBar) confirmBar.style.display = 'flex';
-};
 
 // 이벤트 위임으로 탭별 발췌 버튼 처리
 document.getElementById('tab-contents')?.addEventListener('click', (e) => {
@@ -1262,6 +1267,7 @@ document.getElementById('tab-contents')?.addEventListener('click', (e) => {
 // ── 초기화 ──
 initAgents();
 loadAgendaFromStorage();
+loadChatFromStorage();
 
 // 아젠다 입력 시 자동 저장
 document.getElementById('agenda-input')?.addEventListener('input', saveAgendaToStorage);

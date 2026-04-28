@@ -127,9 +127,9 @@
         </div>
         
         <div class="master-action">
-          <button class="action-btn master-btn disabled" id="btn-summary" disabled>
-            <i class="fa-solid fa-crown"></i> 디렉터 최종 판단
-          </button>
+          <div id="meeting-status" style="display:none; font-size:11px; color:var(--text-muted); text-align:center; padding:8px; font-family:var(--font-mono);">
+            <i class="fa-solid fa-spinner fa-spin"></i> <span id="meeting-status-text">진행 중...</span>
+          </div>
           <button class="action-btn result-btn" id="btn-show-result" style="display:none;">
             <i class="fa-solid fa-scroll"></i> 회의 결과 보기
           </button>
