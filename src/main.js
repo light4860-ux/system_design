@@ -285,10 +285,14 @@ async function startMeeting() {
   isMeeting = true;
 
   const btnStart = document.getElementById('btn-start');
-  btnStart.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 분석 중...';
-  btnStart.disabled = true;
+  if (btnStart) {
+    btnStart.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 분석 중...';
+    btnStart.disabled = true;
+  }
 
-  document.getElementById('chat-container').innerHTML = '';
+  // 현재 활성 탭의 chat-container 초기화
+  const activeContainer = getActiveContainer();
+  if (activeContainer) activeContainer.innerHTML = '';
   document.getElementById('summary-content').innerHTML = '';
 
   // 각 에이전트 응답을 수집하여 다음 에이전트가 참고할 수 있도록 저장
@@ -422,8 +426,8 @@ async function startMeeting() {
       if(lastMsg) {
         lastMsg.querySelector('.chat-text').innerHTML =
           response.replace(/\n/g, '<br>');
-        const chatContainer = document.getElementById('chat-container');
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+        const chatContainer = getActiveContainer();
+        if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
       }
 
       addSummary(agent, response.slice(0, 100) + '...');
@@ -653,8 +657,8 @@ document.getElementById('btn-summary')?.addEventListener('click', async () => {
       masterResponse.replace(/\n/g, '<br>')
     );
 
-    const chatContainer = document.getElementById('chat-container');
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    const chatContainer = getActiveContainer();
+    if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
 
     btn.innerHTML = '<i class="fa-solid fa-crown"></i> 디렉터 최종 판단 완료';
 
