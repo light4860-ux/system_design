@@ -523,8 +523,12 @@ function closeModal() {
 
 if (btnCloseModal) btnCloseModal.addEventListener('click', closeModal);
 if (btnCancelModal) btnCancelModal.addEventListener('click', closeModal);
+const btnSettings = document.getElementById('btn-settings');
+if (btnSettings) btnSettings.addEventListener('click', openModal);
 
-if (btnSaveModal) {
+// 전역 함수 등록 (HTML onclick 대응)
+window.openModal = openModal;
+window.closeModal = closeModal;
   btnSaveModal.addEventListener('click', () => {
     try {
       localStorage.setItem('dnf_gemini_key', document.getElementById('api-key-input').value.trim());
@@ -761,6 +765,7 @@ function renderAgendaRecommendations() {
   }
 }
 
+window.selectAgenda = selectAgenda;
 async function selectAgenda(signalIdx) {
   const signal = allExtractedSignals[signalIdx];
   if (!signal) return;
