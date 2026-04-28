@@ -100,12 +100,24 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function callGemini(systemPrompt, userMessage, retryCount = 0) {
-  const apiKey = localStorage.getItem('dnf_gemini_key');
-  const model = localStorage.getItem('dnf_gemini_model')
-    || 'gemini-2.5-flash';
+async function callGemini(systemPrompt, userMessage, retryCount = 0, isMaster = false) {
+  const mode = localStorage.getItem('dnf_api_mode') || '1';
 
-  if(!apiKey) {
+  let apiKey, model;
+
+  if (mode === '2') {
+    // 고급 모드: 에이전트/마스터 분리
+    apiKey = localStorage.getItem('dnf_gemini_key_adv');
+    model = isMaster
+      ? (localStorage.getItem('dnf_model_master') || 'gemini-2.5-pro')
+      : (localStorage.getItem('dnf_model_agent') || 'gemini-2.5-flash');
+  } else {
+    // 기본 모드
+    apiKey = localStorage.getItem('dnf_gemini_key');
+    model = localStorage.getItem('dnf_gemini_model') || 'gemini-2.5-flash';
+  }
+
+  if (!apiKey) {
     throw new Error(
       'API 키가 설정되지 않았습니다. 우측 상단 설정에서 입력해주세요.'
     );
@@ -136,14 +148,13 @@ async function callGemini(systemPrompt, userMessage, retryCount = 0) {
       const err = await res.json().catch(() => ({}));
       const msg = err?.error?.message || res.statusText;
       
-      // 503 오류 발생 시 최대 5번 재시도 (지수 백오프: 2초, 4초, 6초...)
+      // 503 오류 발생 시 최대 5번 재시도
       if (res.status === 503 && retryCount < 5) {
         const waitTime = 2000 * (retryCount + 1);
-        console.warn(`API 503 에러 발생. ${waitTime/1000}초 후 ${retryCount + 1}회차 재시도 중...`);
         await delay(waitTime);
-        return callGemini(systemPrompt, userMessage, retryCount + 1);
+        return callGemini(systemPrompt, userMessage, retryCount + 1, isMaster);
       }
-      
+
       throw new Error(`API 오류 (${res.status}): ${msg}`);
     }
 
@@ -154,7 +165,7 @@ async function callGemini(systemPrompt, userMessage, retryCount = 0) {
     if (retryCount < 5 && (error.message.includes('503') || error.message.includes('fetch'))) {
       const waitTime = 2000 * (retryCount + 1);
       await delay(waitTime);
-      return callGemini(systemPrompt, userMessage, retryCount + 1);
+      return callGemini(systemPrompt, userMessage, retryCount + 1, isMaster);
     }
     throw error;
   }
@@ -522,7 +533,8 @@ document.getElementById('btn-summary')?.addEventListener('click', async () => {
 
     const masterResponse = await callGemini(
       masterGuide,
-      `기획 안건: ${fullAgenda}\n\n${agentLogs}\n\n위 내용을 종합하여 최종 회의록을 작성해주세요.`
+      `기획 안건: ${fullAgenda}\n\n${agentLogs}\n\n위 내용을 종합하여 최종 회의록을 작성해주세요.`,
+      0, true  // isMaster = true → 고급 모드 시 Pro 모델 사용
     );
 
     addChatMessage('master',
@@ -557,7 +569,7 @@ if (btnCollapseSidebar) {
   });
 }
 
-// Settings Modal Logic (v1.9.7 방식 - 단순하고 안정적)
+// Settings Modal Logic
 const btnCloseModal = document.getElementById('btn-close-modal');
 const btnCancelModal = document.getElementById('btn-cancel-modal');
 const btnSaveModal = document.getElementById('btn-save-modal');
@@ -567,11 +579,27 @@ function openModal() {
   if (!overlay) return;
   overlay.classList.remove('hidden');
   overlay.style.display = 'flex';
+
   try {
+    // 저장된 모드 복원
+    const savedMode = localStorage.getItem('dnf_api_mode') || '1';
+    const modeRadio = document.querySelector(`input[name="api-mode"][value="${savedMode}"]`);
+    if (modeRadio) modeRadio.checked = true;
+    toggleModeSettings(savedMode);
+
+    // 기본 모드 값 복원
     const keyInput = document.getElementById('api-key-input');
     const modelSelect = document.getElementById('model-select');
     if (keyInput) keyInput.value = localStorage.getItem('dnf_gemini_key') || '';
     if (modelSelect) modelSelect.value = localStorage.getItem('dnf_gemini_model') || 'gemini-2.5-flash';
+
+    // 고급 모드 값 복원
+    const keyInputAdv = document.getElementById('api-key-input-adv');
+    const modelAgent = document.getElementById('model-select-agent');
+    const modelMaster = document.getElementById('model-select-master');
+    if (keyInputAdv) keyInputAdv.value = localStorage.getItem('dnf_gemini_key_adv') || '';
+    if (modelAgent) modelAgent.value = localStorage.getItem('dnf_model_agent') || 'gemini-2.5-flash';
+    if (modelMaster) modelMaster.value = localStorage.getItem('dnf_model_master') || 'gemini-2.5-pro';
   } catch(e) {}
 }
 
@@ -582,6 +610,18 @@ function closeModal() {
   overlay.style.display = 'none';
 }
 
+function toggleModeSettings(mode) {
+  const s1 = document.getElementById('mode-1-settings');
+  const s2 = document.getElementById('mode-2-settings');
+  if (s1) s1.style.display = mode === '1' ? 'block' : 'none';
+  if (s2) s2.style.display = mode === '2' ? 'block' : 'none';
+}
+
+// 모드 라디오 변경 이벤트
+document.querySelectorAll('input[name="api-mode"]').forEach(radio => {
+  radio.addEventListener('change', (e) => toggleModeSettings(e.target.value));
+});
+
 if (btnCloseModal) btnCloseModal.addEventListener('click', closeModal);
 if (btnCancelModal) btnCancelModal.addEventListener('click', closeModal);
 
@@ -591,8 +631,22 @@ if (btnSettings) btnSettings.addEventListener('click', openModal);
 if (btnSaveModal) {
   btnSaveModal.addEventListener('click', () => {
     try {
-      localStorage.setItem('dnf_gemini_key', document.getElementById('api-key-input').value.trim());
-      localStorage.setItem('dnf_gemini_model', document.getElementById('model-select').value);
+      const mode = document.querySelector('input[name="api-mode"]:checked')?.value || '1';
+      localStorage.setItem('dnf_api_mode', mode);
+
+      if (mode === '1') {
+        const key = document.getElementById('api-key-input')?.value.trim();
+        const model = document.getElementById('model-select')?.value;
+        if (key) localStorage.setItem('dnf_gemini_key', key);
+        if (model) localStorage.setItem('dnf_gemini_model', model);
+      } else {
+        const keyAdv = document.getElementById('api-key-input-adv')?.value.trim();
+        const modelAgent = document.getElementById('model-select-agent')?.value;
+        const modelMaster = document.getElementById('model-select-master')?.value;
+        if (keyAdv) localStorage.setItem('dnf_gemini_key_adv', keyAdv);
+        if (modelAgent) localStorage.setItem('dnf_model_agent', modelAgent);
+        if (modelMaster) localStorage.setItem('dnf_model_master', modelMaster);
+      }
     } catch(e) {}
     alert('설정이 저장되었습니다.');
     closeModal();

@@ -192,18 +192,69 @@
           <button class="icon-btn sm" id="btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="modal-body">
+
+          <!-- 모드 선택 -->
           <div class="form-group">
-            <label>API Key</label>
-            <input type="password" class="form-input" placeholder="AIza..." id="api-key-input" />
+            <label>운영 모드</label>
+            <div class="mode-selector">
+              <label class="mode-option">
+                <input type="radio" name="api-mode" value="1" id="mode-1" checked>
+                <div class="mode-card">
+                  <div class="mode-title"><i class="fa-solid fa-bolt"></i> 기본 모드</div>
+                  <div class="mode-desc">전체 에이전트 동일 모델 사용</div>
+                </div>
+              </label>
+              <label class="mode-option">
+                <input type="radio" name="api-mode" value="2" id="mode-2">
+                <div class="mode-card">
+                  <div class="mode-title"><i class="fa-solid fa-crown"></i> 고급 모드</div>
+                  <div class="mode-desc">에이전트 Flash + 디렉터 Pro</div>
+                </div>
+              </label>
+            </div>
           </div>
-          <div class="form-group">
-            <label>모델 선택</label>
-            <select class="form-input" id="model-select">
-              <option value="gemini-2.5-flash">gemini-2.5-flash (추천)</option>
-              <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite (저비용)</option>
-              <option value="gemini-2.5-pro">gemini-2.5-pro (고성능)</option>
-            </select>
+
+          <!-- 기본 모드 -->
+          <div id="mode-1-settings">
+            <div class="form-group">
+              <label>Gemini API Key</label>
+              <input type="password" class="form-input" placeholder="AIza..." id="api-key-input" />
+            </div>
+            <div class="form-group">
+              <label>모델 선택</label>
+              <select class="form-input" id="model-select">
+                <option value="gemini-2.5-flash">gemini-2.5-flash (추천)</option>
+                <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite (저비용)</option>
+                <option value="gemini-2.5-pro">gemini-2.5-pro (고성능)</option>
+              </select>
+            </div>
           </div>
+
+          <!-- 고급 모드 -->
+          <div id="mode-2-settings" style="display:none;">
+            <div class="form-group">
+              <label>Gemini API Key <span style="font-size:11px;color:var(--text-muted);">(전체 공용)</span></label>
+              <input type="password" class="form-input" placeholder="AIza..." id="api-key-input-adv" />
+            </div>
+            <div class="form-group">
+              <label>에이전트 모델 <span style="font-size:11px;color:var(--text-muted);">(시스템·콘텐츠·운영)</span></label>
+              <select class="form-input" id="model-select-agent">
+                <option value="gemini-2.5-flash">gemini-2.5-flash (추천)</option>
+                <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite (저비용)</option>
+              </select>
+            </div>
+            <div class="form-group" style="padding-top:12px;border-top:1px solid var(--border-subtle);">
+              <label>디렉터 모델 <span style="font-size:11px;color:var(--text-muted);">(마스터 전용)</span></label>
+              <select class="form-input" id="model-select-master">
+                <option value="gemini-2.5-pro">gemini-2.5-pro (고성능, 추천)</option>
+                <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+              </select>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);background:var(--bg-input);padding:8px 10px;border-radius:6px;line-height:1.6;margin-top:8px;">
+              💡 에이전트 3명은 Flash로 빠르게, 디렉터는 Pro로 정확하게 종합합니다.
+            </div>
+          </div>
+
         </div>
         <div class="modal-footer">
           <button class="action-btn outline" id="btn-cancel-modal">취소</button>
