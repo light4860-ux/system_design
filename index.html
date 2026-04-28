@@ -76,7 +76,7 @@
           </div>
         </div>
 
-        <!-- Chat / Results Log -->
+        <!-- 회의 탭 영역 -->
         <div class="meeting-log soft-panel">
           <div class="panel-header">
             <h2><i class="fa-solid fa-comments"></i> 실시간 회의 로그</h2>
@@ -86,18 +86,29 @@
               <button class="icon-btn sm" id="btn-expand-log" title="확장"><i class="fa-solid fa-expand"></i></button>
             </div>
           </div>
-          <div class="chat-container" id="chat-container">
-            <!-- Messages injected by JS -->
-            <div class="welcome-message">
-              <i class="fa-brands fa-hubspot"></i>
-              <p>기획 안건을 입력하고 회의를 시작하면, 이곳에 실시간 회의 로그가 순차적으로 기록됩니다.</p>
-            </div>
+
+          <!-- 탭 헤더 -->
+          <div class="meeting-tabs" id="meeting-tabs">
+            <button class="meeting-tab active" data-tab="0">
+              <i class="fa-solid fa-comments"></i> 회의 1
+            </button>
           </div>
-          <!-- 발췌 회의 확인 바 -->
-          <div id="excerpt-confirm-bar" style="display:none; padding:12px 16px; background:var(--bg-hover); border-top:1px solid var(--border-subtle); gap:8px; align-items:center; justify-content:flex-end;">
-            <span style="font-size:12px;color:var(--text-secondary);margin-right:auto;">선택한 문단으로 아젠다를 생성합니다</span>
-            <button class="action-btn outline" id="btn-excerpt-cancel" style="font-size:12px;padding:6px 12px;">취소</button>
-            <button class="action-btn primary" id="btn-excerpt-confirm" style="font-size:12px;padding:6px 12px;"><i class="fa-solid fa-bolt"></i> 아젠다 생성</button>
+
+          <!-- 탭 컨텐츠 -->
+          <div class="tab-contents" id="tab-contents">
+            <div class="tab-content active" data-tab="0">
+              <div class="chat-container" id="chat-container-0">
+                <div class="welcome-message">
+                  <i class="fa-brands fa-hubspot"></i>
+                  <p>기획 안건을 입력하고 회의를 시작하면, 이곳에 실시간 회의 로그가 순차적으로 기록됩니다.</p>
+                </div>
+              </div>
+              <div class="excerpt-confirm-bar" style="display:none;">
+                <span style="font-size:12px;color:var(--text-secondary);margin-right:auto;">선택한 문단으로 아젠다를 생성합니다</span>
+                <button class="action-btn outline btn-excerpt-cancel" style="font-size:12px;padding:6px 12px;">취소</button>
+                <button class="action-btn primary btn-excerpt-confirm" style="font-size:12px;padding:6px 12px;"><i class="fa-solid fa-bolt"></i> 아젠다 생성</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -188,6 +199,25 @@
           <button class="action-btn outline" id="btn-context-cancel">취소</button>
           <button class="action-btn primary" id="btn-context-confirm">
             <i class="fa-solid fa-check"></i> 적용 후 회의 준비
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 아젠다 선택 확인 팝업 -->
+    <div id="agenda-confirm-modal" class="modal-overlay hidden">
+      <div class="modal soft-panel" style="max-width:480px;">
+        <div class="modal-header panel-header">
+          <h2><i class="fa-solid fa-circle-question" style="color:#fbbf24;"></i> 새 회의 시작</h2>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">선택한 아젠다로 새 탭에서 회의를 시작합니다.</p>
+          <div id="agenda-confirm-preview" style="background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:6px;padding:12px;font-size:12px;color:var(--text-main);line-height:1.6;white-space:pre-wrap;"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn outline" id="btn-agenda-confirm-cancel">취소</button>
+          <button class="action-btn primary" id="btn-agenda-confirm-ok">
+            <i class="fa-solid fa-bolt"></i> 새 탭에서 회의 시작
           </button>
         </div>
       </div>

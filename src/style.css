@@ -1167,3 +1167,83 @@ body {
   border-color: rgba(251, 191, 36, 0.6);
   background: rgba(251, 191, 36, 0.08);
 }
+
+/* ── 회의 탭 ── */
+.meeting-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 16px 0;
+  background: var(--bg-card2);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.meeting-tab {
+  padding: 7px 14px;
+  font-size: 12px;
+  font-family: var(--font-body);
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  bottom: -1px;
+}
+
+.meeting-tab:hover {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
+.meeting-tab.active {
+  color: var(--text-main);
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+  border-bottom-color: var(--bg-surface);
+  font-weight: 600;
+}
+
+.tab-contents {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-content {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.tab-content.active {
+  display: flex;
+}
+
+.excerpt-confirm-bar {
+  padding: 12px 16px;
+  background: var(--bg-hover);
+  border-top: 1px solid var(--border-subtle);
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+/* meeting-log flex 구조 수정 */
+.meeting-log {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.meeting-log .panel-header {
+  flex-shrink: 0;
+}

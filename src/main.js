@@ -6,9 +6,73 @@ const agents =[
   { id: 'ops', name: '운영 & UX 담당자', tag: 'OPS', icon: '<i class="fa-solid fa-chart-line"></i>', desc: '유저 경험(UX)과 서비스 지표를 관리합니다.' }
 ];
 
+// ── 탭 시스템 ──
+let tabs = [{ id: 0, title: '회의 1', agenda: '' }];
+let activeTab = 0;
+let tabCounter = 1;
+const MAX_TABS = 3;
+
+function getActiveContainer() {
+  return document.getElementById(`chat-container-${activeTab}`);
+}
+
+function createTab(tabId, title) {
+  // 탭 헤더 버튼
+  const tabsEl = document.getElementById('meeting-tabs');
+  const btn = document.createElement('button');
+  btn.className = 'meeting-tab';
+  btn.dataset.tab = tabId;
+  btn.innerHTML = `<i class="fa-solid fa-comments"></i> ${title}`;
+  btn.addEventListener('click', () => switchTab(tabId));
+  tabsEl.appendChild(btn);
+
+  // 탭 컨텐츠
+  const contentsEl = document.getElementById('tab-contents');
+  const content = document.createElement('div');
+  content.className = 'tab-content';
+  content.dataset.tab = tabId;
+  content.innerHTML = `
+    <div class="chat-container" id="chat-container-${tabId}">
+      <div class="welcome-message">
+        <i class="fa-brands fa-hubspot"></i>
+        <p>기획 안건을 입력하고 회의를 시작하면, 이곳에 실시간 회의 로그가 순차적으로 기록됩니다.</p>
+      </div>
+    </div>
+    <div class="excerpt-confirm-bar" style="display:none;">
+      <span style="font-size:12px;color:var(--text-secondary);margin-right:auto;">선택한 문단으로 아젠다를 생성합니다</span>
+      <button class="action-btn outline btn-excerpt-cancel" style="font-size:12px;padding:6px 12px;">취소</button>
+      <button class="action-btn primary btn-excerpt-confirm" style="font-size:12px;padding:6px 12px;"><i class="fa-solid fa-bolt"></i> 아젠다 생성</button>
+    </div>
+  `;
+  contentsEl.appendChild(content);
+}
+
+function switchTab(tabId) {
+  activeTab = tabId;
+  document.querySelectorAll('.meeting-tab').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.tab) === tabId);
+  });
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.toggle('active', parseInt(content.dataset.tab) === tabId);
+  });
+}
+
+function addNewTab(agenda) {
+  if (tabs.length >= MAX_TABS) {
+    alert(`최대 ${MAX_TABS}개의 회의 탭을 사용할 수 있습니다.`);
+    return false;
+  }
+  const tabId = ++tabCounter;
+  const title = `회의 ${tabs.length + 1}`;
+  tabs.push({ id: tabId, title, agenda });
+  createTab(tabId, title);
+  switchTab(tabId);
+  return tabId;
+}
+
 let currentStep = 0;
 let isMeeting = false;
-let attachedFiles = []; // { name: string, content: string }
+let attachedFiles = [];
 
 function updateStepIndicator() {
   const stepIndicator = document.getElementById('step-indicator');
@@ -17,6 +81,33 @@ function updateStepIndicator() {
       <div class="step-dot"></div> ${a.name}
     </div>
   `).join('');
+}
+
+// ── localStorage 유지 ──
+function saveAgendaToStorage() {
+  const val = document.getElementById('agenda-input')?.value || '';
+  localStorage.setItem('dnf_agenda_draft', val);
+}
+
+function loadAgendaFromStorage() {
+  const val = localStorage.getItem('dnf_agenda_draft');
+  const el = document.getElementById('agenda-input');
+  if (val && el) el.value = val;
+}
+
+function saveGuidesToStorage() {
+  agents.forEach(a => {
+    const el = document.querySelector(`.agent-card.${a.id} .agent-guide`);
+    if (el) localStorage.setItem(`dnf_guide_${a.id}`, el.value);
+  });
+}
+
+function loadGuidesFromStorage() {
+  agents.forEach(a => {
+    const el = document.querySelector(`.agent-card.${a.id} .agent-guide`);
+    const val = localStorage.getItem(`dnf_guide_${a.id}`);
+    if (el && val) el.value = val;
+  });
 }
 
 function initAgents() {
@@ -38,14 +129,17 @@ function initAgents() {
     input.addEventListener('change', (e) => {
       const agentId = e.target.dataset.id;
       const agent = agents.find(a => a.id === agentId);
-      if (agent) {
-        agent.name = e.target.value;
-        updateStepIndicator();
-      }
+      if (agent) { agent.name = e.target.value; updateStepIndicator(); }
     });
   });
 
+  // 지침 변경 시 자동 저장
+  document.querySelectorAll('.agent-guide').forEach(textarea => {
+    textarea.addEventListener('input', saveGuidesToStorage);
+  });
+
   updateStepIndicator();
+  loadGuidesFromStorage();
 }
 
 function updateTime() {
@@ -53,9 +147,9 @@ function updateTime() {
 }
 
 function addChatMessage(agentId, message) {
-  const container = document.getElementById('chat-container');
-  
-  // Remove welcome message if exists
+  const container = getActiveContainer();
+  if (!container) return;
+
   const welcome = container.querySelector('.welcome-message');
   if (welcome) welcome.remove();
 
@@ -419,15 +513,47 @@ function renderAttachedFiles() {
 }
 
 document.getElementById('btn-reset')?.addEventListener('click', () => {
+  if (!confirm('모든 회의 탭과 입력 내용을 초기화할까요?')) return;
+
+  // 아젠다 초기화
   document.getElementById('agenda-input').value = '';
+  localStorage.removeItem('dnf_agenda_draft');
   attachedFiles = [];
   renderAttachedFiles();
-  document.getElementById('chat-container').innerHTML = `
-    <div class="welcome-message">
-      <i class="fa-brands fa-hubspot"></i>
-      <p>기획 안건을 입력하고 회의를 시작하면, 이곳에 실시간 회의 로그가 순차적으로 기록됩니다.</p>
+
+  // 탭 초기화 - 탭 1만 남기고 삭제
+  tabs = [{ id: 0, title: '회의 1', agenda: '' }];
+  activeTab = 0;
+  tabCounter = 1;
+
+  // 탭 헤더 초기화
+  const tabsEl = document.getElementById('meeting-tabs');
+  tabsEl.innerHTML = `
+    <button class="meeting-tab active" data-tab="0">
+      <i class="fa-solid fa-comments"></i> 회의 1
+    </button>
+  `;
+  tabsEl.querySelector('[data-tab="0"]').addEventListener('click', () => switchTab(0));
+
+  // 탭 컨텐츠 초기화
+  const contentsEl = document.getElementById('tab-contents');
+  contentsEl.innerHTML = `
+    <div class="tab-content active" data-tab="0">
+      <div class="chat-container" id="chat-container-0">
+        <div class="welcome-message">
+          <i class="fa-brands fa-hubspot"></i>
+          <p>기획 안건을 입력하고 회의를 시작하면, 이곳에 실시간 회의 로그가 순차적으로 기록됩니다.</p>
+        </div>
+      </div>
+      <div class="excerpt-confirm-bar" style="display:none;">
+        <span style="font-size:12px;color:var(--text-secondary);margin-right:auto;">선택한 문단으로 아젠다를 생성합니다</span>
+        <button class="action-btn outline btn-excerpt-cancel" style="font-size:12px;padding:6px 12px;">취소</button>
+        <button class="action-btn primary btn-excerpt-confirm" style="font-size:12px;padding:6px 12px;"><i class="fa-solid fa-bolt"></i> 아젠다 생성</button>
+      </div>
     </div>
   `;
+
+  // 요약/버튼 초기화
   document.getElementById('summary-content').innerHTML = `
     <div class="empty-state">
       <i class="fa-solid fa-hourglass-empty"></i>
@@ -444,12 +570,11 @@ document.getElementById('btn-reset')?.addEventListener('click', () => {
   if (btnAR) { btnAR.style.display = 'none'; btnAR.disabled = true; }
   window._lastAgentResponses = null;
   window._lastFullAgenda = null;
-  
+
   document.querySelectorAll('.step').forEach(el => {
-    el.classList.remove('active');
-    el.classList.remove('done');
+    el.classList.remove('active', 'done');
   });
-  
+
   isMeeting = false;
 });
 
@@ -458,7 +583,7 @@ document.getElementById('btn-summary')?.addEventListener('click', async () => {
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 종합 중...';
   btn.disabled = true;
 
-  const chatMsgs = document.querySelectorAll('.chat-msg:not(.msg-master)');
+  const chatMsgs = getActiveContainer()?.querySelectorAll('.chat-msg:not(.msg-master)') || [];
   let agentLogs = '';
   chatMsgs.forEach(msg => {
     const name = msg.querySelector('.chat-name')?.textContent || '';
@@ -552,9 +677,6 @@ document.getElementById('btn-summary')?.addEventListener('click', async () => {
     btn.disabled = false;
   }
 });
-
-// Initialize on load
-initAgents();
 
 // Sidebar Collapse Logic
 const btnCollapseSidebar = document.getElementById('btn-collapse-sidebar');
@@ -653,9 +775,11 @@ if (btnSaveModal) {
 }
 // ── 회의 로그 다운로드 ──
 function downloadChatLog() {
-  const msgs = document.querySelectorAll('.chat-msg');
+  const container = getActiveContainer();
+  const msgs = container?.querySelectorAll('.chat-msg') || [];
   if(!msgs.length) { alert('다운로드할 회의 로그가 없습니다.'); return; }
-  let log = `DNF 기획 회의 로그\n일시: ${new Date().toLocaleString('ko-KR')}\n${'='.repeat(50)}\n\n`;
+  const tabTitle = tabs.find(t => t.id === activeTab)?.title || '회의';
+  let log = `DNF 기획 ${tabTitle} 로그\n일시: ${new Date().toLocaleString('ko-KR')}\n${'='.repeat(50)}\n\n`;
   msgs.forEach(msg => {
     const name = msg.querySelector('.chat-name')?.textContent || '';
     const time = msg.querySelector('.chat-time')?.textContent || '';
@@ -666,7 +790,7 @@ function downloadChatLog() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `회의로그_${new Date().toLocaleDateString('ko-KR').replace(/\. /g,'').replace('.','')}.txt`;
+  a.download = `회의로그_${tabTitle}_${new Date().toLocaleDateString('ko-KR').replace(/\. /g,'').replace('.','')}.txt`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -847,8 +971,8 @@ function renderAgendaRecommendations() {
         </button>
       </div>
       <div class="agenda-card-title">📌 ${s.title}</div>
-      <div class="agenda-card-reason">왜 지금?: ${s.reason}</div>
-      <div class="agenda-card-quote">관련 발언: "${s.quote}"</div>
+      <div class="agenda-card-reason">${s.reason}</div>
+      <div class="agenda-card-quote">"${s.quote}"</div>
     </div>
   `).join('');
 
@@ -880,13 +1004,57 @@ async function selectAgenda(signalIdx) {
   const signal = allExtractedSignals[signalIdx];
   if (!signal) return;
 
-  // 아젠다 입력란에 설정
-  const agendaInput = document.getElementById('agenda-input');
   const newAgenda = `[${signal.title}] 구체화 회의\n\n이전 회의에서 미확정된 사항:\n- ${signal.reason}\n\n관련 맥락: "${signal.quote}"`;
-  agendaInput.value = newAgenda;
 
-  // 에이전트 지침 컨텍스트 추가 (미리보기)
-  showContextUpdatePreview(signal);
+  // 확인 팝업 표시
+  const confirmModal = document.getElementById('agenda-confirm-modal');
+  const previewEl = document.getElementById('agenda-confirm-preview');
+  if (!confirmModal || !previewEl) return;
+
+  previewEl.textContent = newAgenda;
+  confirmModal.classList.remove('hidden');
+
+  // 확인 버튼
+  document.getElementById('btn-agenda-confirm-ok').onclick = () => {
+    confirmModal.classList.add('hidden');
+    document.getElementById('agenda-modal')?.classList.add('hidden');
+
+    // 새 탭 생성
+    const newTabId = addNewTab(newAgenda);
+    if (newTabId === false) return;
+
+    // 아젠다 입력란 업데이트
+    document.getElementById('agenda-input').value = newAgenda;
+    saveAgendaToStorage();
+
+    // 에이전트 지침 컨텍스트 추가
+    const contextAdd = `\n\n[이번 회의 컨텍스트]\n이전 미확정: ${signal.title}\n집중 논의: ${signal.reason}`;
+    document.querySelectorAll('.agent-guide').forEach(textarea => {
+      textarea.value = textarea.value + contextAdd;
+    });
+    saveGuidesToStorage();
+
+    // 요약/버튼 초기화
+    document.getElementById('summary-content').innerHTML = `
+      <div class="empty-state">
+        <i class="fa-solid fa-hourglass-empty"></i>
+        <p>회의가 진행되면 요약이 생성됩니다.</p>
+      </div>
+    `;
+    document.getElementById('btn-start').innerHTML = '<i class="fa-solid fa-bolt"></i> 회의 시작';
+    document.getElementById('btn-start').disabled = false;
+    document.getElementById('btn-summary').disabled = true;
+    document.getElementById('btn-summary').classList.add('disabled');
+    document.getElementById('btn-show-result').style.display = 'none';
+    const btnAR = document.getElementById('btn-agenda-recommend');
+    if (btnAR) { btnAR.style.display = 'none'; btnAR.disabled = true; }
+    document.querySelectorAll('.step').forEach(el => el.classList.remove('active', 'done'));
+    isMeeting = false;
+  };
+
+  document.getElementById('btn-agenda-confirm-cancel').onclick = () => {
+    confirmModal.classList.add('hidden');
+  };
 }
 
 function showContextUpdatePreview(signal) {
@@ -1021,3 +1189,78 @@ function cancelExcerpt() {
 document.getElementById('btn-excerpt-mode')?.addEventListener('click', enableExcerptMode);
 document.getElementById('btn-excerpt-confirm')?.addEventListener('click', confirmExcerpt);
 document.getElementById('btn-excerpt-cancel')?.addEventListener('click', cancelExcerpt);
+
+// ══════════════════════════════════════════════
+// 탭 기반 발췌 회의 및 초기화
+// ══════════════════════════════════════════════
+
+// 기존 발췌 함수 오버라이드
+enableExcerptMode = function() {
+  const container = getActiveContainer();
+  if (!container) return;
+  const msgs = container.querySelectorAll('.chat-msg');
+  msgs.forEach((msg) => {
+    if (msg.querySelector('.excerpt-checkbox')) return;
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'excerpt-checkbox';
+    msg.style.position = 'relative';
+    msg.insertBefore(checkbox, msg.firstChild);
+  });
+  const btn = document.getElementById('btn-excerpt-mode');
+  const activeContent = document.querySelector('.tab-content.active');
+  const confirmBar = activeContent?.querySelector('.excerpt-confirm-bar');
+  if (btn) btn.style.display = 'none';
+  if (confirmBar) confirmBar.style.display = 'flex';
+};
+
+// 이벤트 위임으로 탭별 발췌 버튼 처리
+document.getElementById('tab-contents')?.addEventListener('click', (e) => {
+  if (e.target.closest('.btn-excerpt-confirm')) {
+    // 현재 활성 탭의 체크된 항목 처리
+    const checked = document.querySelectorAll('.excerpt-checkbox:checked');
+    if (!checked.length) { alert('선택한 문단이 없습니다.'); return; }
+    let excerptText = '';
+    checked.forEach(cb => {
+      const msg = cb.closest('.chat-msg');
+      const name = msg.querySelector('.chat-name')?.textContent || '';
+      const text = msg.querySelector('.chat-text')?.innerText || '';
+      excerptText += `[${name}]: ${text}\n\n`;
+    });
+    const activeContent = document.querySelector('.tab-content.active');
+    const confirmBar = activeContent?.querySelector('.excerpt-confirm-bar');
+    if (confirmBar) confirmBar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 아젠다 생성 중...';
+    callGemini(
+      `선택된 내용으로 구체화 아젠다를 JSON으로 반환:
+{"title":"제목(25자이내)","unresolved":["항목1","항목2"],"context":"방향(50자이내)"}`,
+      excerptText
+    ).then(result => {
+      try {
+        const parsed = JSON.parse(result.replace(/```json/g,'').replace(/```/g,'').trim());
+        const newAgenda = `[${parsed.title}]\n\n미확정 사항:\n${parsed.unresolved.map(u=>`- ${u}`).join('\n')}\n\n방향: ${parsed.context}`;
+        document.getElementById('agenda-input').value = newAgenda;
+        saveAgendaToStorage();
+        document.querySelectorAll('.excerpt-checkbox').forEach(cb => cb.remove());
+        document.getElementById('btn-excerpt-mode').style.display = 'flex';
+        if (confirmBar) { confirmBar.style.display = 'none'; confirmBar.innerHTML = `<span style="font-size:12px;color:var(--text-secondary);margin-right:auto;">선택한 문단으로 아젠다를 생성합니다</span><button class="action-btn outline btn-excerpt-cancel" style="font-size:12px;padding:6px 12px;">취소</button><button class="action-btn primary btn-excerpt-confirm" style="font-size:12px;padding:6px 12px;"><i class="fa-solid fa-bolt"></i> 아젠다 생성</button>`; }
+      } catch(err) { if (confirmBar) confirmBar.innerHTML = `<span style="color:#f87171">파싱 오류</span>`; }
+    }).catch(err => { if (confirmBar) confirmBar.innerHTML = `<span style="color:#f87171">오류: ${err.message}</span>`; });
+  }
+  if (e.target.closest('.btn-excerpt-cancel')) {
+    document.querySelectorAll('.excerpt-checkbox').forEach(cb => cb.remove());
+    document.getElementById('btn-excerpt-mode').style.display = 'flex';
+    const activeContent = document.querySelector('.tab-content.active');
+    const confirmBar = activeContent?.querySelector('.excerpt-confirm-bar');
+    if (confirmBar) confirmBar.style.display = 'none';
+  }
+});
+
+// ── 초기화 ──
+initAgents();
+loadAgendaFromStorage();
+
+// 아젠다 입력 시 자동 저장
+document.getElementById('agenda-input')?.addEventListener('input', saveAgendaToStorage);
+
+// 탭 0 클릭 이벤트
+document.querySelector('[data-tab="0"]')?.addEventListener('click', () => switchTab(0));
