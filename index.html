@@ -42,7 +42,10 @@
       <aside class="sidebar soft-panel" id="sidebar">
         <div class="panel-header">
           <h2><i class="fa-solid fa-users-rays"></i> <span>참여 에이전트</span></h2>
-          <button class="icon-btn sm" id="btn-collapse-sidebar"><i class="fa-solid fa-chevron-left" style="transition: transform 0.3s;"></i></button>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button class="icon-btn sm" title="전체 지침 초기화" onclick="clearAllGuides()"><i class="fa-solid fa-eraser"></i></button>
+            <button class="icon-btn sm" id="btn-collapse-sidebar"><i class="fa-solid fa-chevron-left" style="transition: transform 0.3s;"></i></button>
+          </div>
         </div>
         
         <div class="agents-container" id="agents-container">
