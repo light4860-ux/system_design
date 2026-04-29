@@ -50,12 +50,12 @@
 
 html {
   height: 100%;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 body {
   height: 100%;
-  overflow: hidden;
+  overflow-y: auto;
   background-color: var(--bg-base);
   color: var(--text-main);
   font-family: var(--font-sans);
@@ -75,9 +75,8 @@ body {
 #app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  max-height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow: visible;
   padding: 16px 24px 24px 24px;
   gap: 20px;
 }
@@ -188,11 +187,11 @@ body {
 .dashboard-layout {
   display: grid;
   grid-template-columns: 260px 1fr 300px;
-  grid-template-rows: 1fr;
+  grid-template-rows: auto;
   gap: 24px;
   flex: 1;
-  min-height: 0;
-  overflow: hidden;
+  min-height: 600px;
+  overflow: visible;
   transition: grid-template-columns 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
