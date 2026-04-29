@@ -237,48 +237,6 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function clearCountdown() {
-  const el = document.getElementById('retry-countdown');
-  if (el) el.remove();
-}
-
-function delayWithCountdown(ms, retryNum) {
-  return new Promise(resolve => {
-    clearCountdown();
-
-    const banner = document.createElement('div');
-    banner.id = 'retry-countdown';
-    banner.style.cssText = `
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-      background: #1a1a2e; border: 1px solid #f97316; border-radius: 10px;
-      padding: 12px 24px; color: #f97316; font-size: 14px; font-weight: 600;
-      z-index: 9999; display: flex; align-items: center; gap: 12px;
-      box-shadow: 0 4px 20px rgba(249,115,22,0.3);
-    `;
-
-    const seconds = Math.floor(ms / 1000);
-    let remaining = seconds;
-
-    banner.innerHTML = `
-      <span>⚠️</span>
-      <span>서버 과부하 (503) — ${retryNum}번째 재시도 대기 중</span>
-      <span id="retry-sec" style="color:#fff; min-width:32px; text-align:center;">${remaining}초</span>
-    `;
-    document.body.appendChild(banner);
-
-    const tick = setInterval(() => {
-      remaining--;
-      const secEl = document.getElementById('retry-sec');
-      if (secEl) secEl.textContent = `${remaining}초`;
-      if (remaining <= 0) {
-        clearInterval(tick);
-        clearCountdown();
-        resolve();
-      }
-    }, 1000);
-  });
-}
-
 async function callGemini(systemPrompt, userMessage, retryCount = 0, isMaster = false) {
   const mode = localStorage.getItem('dnf_api_mode') || '1';
 
@@ -327,10 +285,10 @@ async function callGemini(systemPrompt, userMessage, retryCount = 0, isMaster = 
       const err = await res.json().catch(() => ({}));
       const msg = err?.error?.message || res.statusText;
       
-      // 503 오류 발생 시 최대 5번 재시도 (10초 단위 간격)
+      // 503 오류 발생 시 최대 5번 재시도
       if (res.status === 503 && retryCount < 5) {
-        const waitTime = 10000 * (retryCount + 1);
-        await delayWithCountdown(waitTime, retryCount + 1);
+        const waitTime = 2000 * (retryCount + 1);
+        await delay(waitTime);
         return callGemini(systemPrompt, userMessage, retryCount + 1, isMaster);
       }
 
@@ -338,17 +296,14 @@ async function callGemini(systemPrompt, userMessage, retryCount = 0, isMaster = 
     }
 
     const data = await res.json();
-    // 카운트다운 표시 제거
-    clearCountdown();
     return data.candidates?.[0]?.content?.parts?.[0]?.text
       || '응답이 없습니다.';
   } catch (error) {
     if (retryCount < 5 && (error.message.includes('503') || error.message.includes('fetch'))) {
-      const waitTime = 10000 * (retryCount + 1);
-      await delayWithCountdown(waitTime, retryCount + 1);
+      const waitTime = 2000 * (retryCount + 1);
+      await delay(waitTime);
       return callGemini(systemPrompt, userMessage, retryCount + 1, isMaster);
     }
-    clearCountdown();
     throw error;
   }
 }
@@ -1432,3 +1387,12 @@ window.addEventListener('beforeunload', () => {
   localStorage.removeItem('dnf_agenda_draft');
   agents.forEach(a => localStorage.removeItem(`dnf_guide_${a.id}`));
 });
+
+// ── 전체 지침 초기화 ──
+window.clearAllGuides = function() {
+  if (!confirm('3명의 에이전트 추가 지침을 모두 초기화할까요?')) return;
+  document.querySelectorAll('.agent-guide').forEach(textarea => {
+    textarea.value = '';
+  });
+  agents.forEach(a => localStorage.removeItem(`dnf_guide_${a.id}`));
+};
